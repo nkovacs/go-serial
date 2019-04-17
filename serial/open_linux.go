@@ -149,12 +149,6 @@ func openInternal(options OpenOptions) (io.ReadWriteCloser, error) {
 		return nil, openErr
 	}
 
-	// Clear the non-blocking flag set above.
-	nonblockErr := syscall.SetNonblock(int(file.Fd()), false)
-	if nonblockErr != nil {
-		return nil, nonblockErr
-	}
-
 	t2, optErr := makeTermios2(options)
 	if optErr != nil {
 		return nil, optErr
@@ -203,6 +197,13 @@ func openInternal(options OpenOptions) (io.ReadWriteCloser, error) {
 		if r != 0 {
 			return nil, errors.New("Unknown error from SYS_IOCTL (RS485)")
 		}
+	}
+
+	// file.Fd() puts the file into blocking mode. We need to put it back into
+	// non-blocking mode.
+	nonblockErr := syscall.SetNonblock(int(file.Fd()), true)
+	if nonblockErr != nil {
+		return nil, nonblockErr
 	}
 
 	return file, nil
