@@ -196,7 +196,7 @@ func convertOptions(options OpenOptions) (*termios, error) {
 	return &result, nil
 }
 
-func openInternal(options OpenOptions) (io.ReadWriteCloser, error) {
+func openInternal(options OpenOptions) (retFile io.ReadWriteCloser, retErr error) {
 	// Open the serial port in non-blocking mode, since otherwise the OS will
 	// wait for the CARRIER line to be asserted.
 	file, err :=
@@ -208,6 +208,11 @@ func openInternal(options OpenOptions) (io.ReadWriteCloser, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		if retErr != nil {
+			file.Close()
+		}
+	}()
 
 	// We want to do blocking I/O, so clear the non-blocking flag set above.
 	r1, _, errno :=
